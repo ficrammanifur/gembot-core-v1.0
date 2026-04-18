@@ -1,0 +1,1 @@
+# gembot-core-v1.0
