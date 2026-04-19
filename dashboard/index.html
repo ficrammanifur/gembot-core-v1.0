@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEMBOT Control Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>GEMBOT Control Center</h1>
+                <div class="status-indicator">
+                    <span class="status-dot" id="connectionStatus"></span>
+                    <span id="statusText">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Video Stream Panel -->
+            <section class="panel video-panel">
+                <h2>Live Camera Feed</h2>
+                <div class="video-container">
+                    <div id="videoStream" class="video-stream">
+                        <img id="streamImage" src="" alt="Camera Feed">
+                        <div class="stream-overlay">
+                            <div id="fps" class="fps-counter">0 FPS</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="video-controls">
+                    <button id="streamToggle" class="btn btn-primary">Start Stream</button>
+                </div>
+            </section>
+
+            <!-- Control Panel -->
+            <section class="panel control-panel">
+                <h2>Robot Control</h2>
+                
+                <!-- Movement Controls -->
+                <div class="control-section">
+                    <h3>Movement</h3>
+                    <div class="movement-controls">
+                        <button id="moveForward" class="btn btn-large" data-direction="forward">
+                            ↑ Forward
+                        </button>
+                        <div>
+                            <button id="moveLeft" class="btn btn-large" data-direction="left">
+                                ← Left
+                            </button>
+                            <button id="moveStop" class="btn btn-danger btn-large">
+                                ■ Stop
+                            </button>
+                            <button id="moveRight" class="btn btn-large" data-direction="right">
+                                Right →
+                            </button>
+                        </div>
+                        <button id="moveBackward" class="btn btn-large" data-direction="backward">
+                            ↓ Backward
+                        </button>
+                    </div>
+                    
+                    <div class="speed-control">
+                        <label for="speedSlider">Speed: <span id="speedValue">75</span>%</label>
+                        <input type="range" id="speedSlider" min="0" max="255" value="150">
+                    </div>
+                </div>
+
+                <!-- Voice Control -->
+                <div class="control-section">
+                    <h3>Voice Control</h3>
+                    <button id="speakButton" class="btn btn-primary btn-large">
+                        🎤 Hold to Speak
+                    </button>
+                    <div id="transcriptionResult" class="transcription">
+                        <p id="transcriptionText">Waiting for input...</p>
+                    </div>
+                </div>
+
+                <!-- Speak Function -->
+                <div class="control-section">
+                    <h3>Make Robot Speak</h3>
+                    <input type="text" id="speakInput" placeholder="Enter text to speak" class="text-input">
+                    <button id="speakSubmit" class="btn btn-primary">Speak</button>
+                </div>
+            </section>
+
+            <!-- Information Panel -->
+            <section class="panel info-panel">
+                <h2>System Information</h2>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Robot State:</label>
+                        <span id="robotState">---</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Camera Status:</label>
+                        <span id="cameraStatus">---</span>
+                    </div>
+                    <div class="info-item">
+                        <label>LiDAR Status:</label>
+                        <span id="lidarStatus">---</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Objects Detected:</label>
+                        <span id="objectCount">0</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Path Clear:</label>
+                        <span id="pathStatus">Yes</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Closest Obstacle:</label>
+                        <span id="obstacleDistance">---</span>
+                    </div>
+                </div>
+
+                <!-- Detections List -->
+                <div class="detections-section">
+                    <h3>Object Detections</h3>
+                    <div id="detectionsList" class="detections-list">
+                        <p class="empty-state">No objects detected</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>GEMBOT Control Dashboard v1.0 | 
+               Raspberry Pi: <span id="raspiStatus">Offline</span> | 
+               AI Server: <span id="aiStatus">Offline</span> | 
+               ESP32: <span id="esp32Status">Offline</span>
+            </p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
