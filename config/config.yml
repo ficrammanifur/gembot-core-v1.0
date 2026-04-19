@@ -1,0 +1,78 @@
+# GEMBOT Configuration File
+# All settings for the distributed robot system
+
+# MQTT Broker Configuration
+mqtt:
+  broker: "192.168.1.100"      # MQTT broker IP
+  port: 1883                    # Standard MQTT port
+  username: ""                  # Optional MQTT auth
+  password: ""
+  keepalive: 60
+  reconnect_delay: 5            # Seconds
+
+# AI Server Configuration (PC with YOLOv8)
+ai_server:
+  host: "192.168.1.100"         # AI Server IP
+  port: 5000                    # API port
+  timeout: 30                   # Request timeout (seconds)
+  detection_confidence: 0.5     # YOLO confidence threshold
+  
+# ESP32 Configuration (TTS & Audio Output)
+esp32:
+  host: "192.168.1.50"          # ESP32 IP
+  port: 80                      # HTTP port
+  timeout: 10
+  
+# Camera Configuration
+camera:
+  resolution: [640, 480]        # [width, height]
+  fps: 30                       # Frames per second
+  brightness: 0
+  contrast: 0
+  rotation: 0
+  
+# LiDAR Configuration
+lidar:
+  port: "/dev/ttyUSB0"          # Serial port (change for your system)
+  baudrate: 256000
+  max_distance: 5.0             # Max detection distance (meters)
+  min_distance: 0.15            # Min detection distance
+  obstacle_threshold: 2.0       # Distance to trigger obstacle avoidance
+  
+# Motor Configuration
+motor:
+  left_pin: 17                  # GPIO pins
+  right_pin: 27
+  max_speed: 255                # PWM max value
+  
+# Audio Configuration
+audio:
+  tts_language: "en"
+  sample_rate: 16000
+  chunk_size: 1024
+  
+# Logging Configuration
+logging:
+  level: "INFO"                 # DEBUG, INFO, WARNING, ERROR
+  file: "logs/gembot.log"
+  max_size: 10485760            # 10 MB
+  backup_count: 5
+  
+# Dashboard Configuration
+dashboard:
+  host: "0.0.0.0"
+  port: 5001
+  stream_quality: 80            # JPEG quality (1-100)
+  fps: 15                       # Stream FPS
+  
+# System Behavior
+system:
+  auto_start: true              # Auto-start on boot
+  debug_mode: false
+  enable_logging: true
+  
+# Safety Limits
+safety:
+  max_motor_speed: 200
+  obstacle_stop_distance: 0.5   # Stop if obstacle closer than this
+  emergency_stop_key: "q"       # Keyboard key for emergency stop
