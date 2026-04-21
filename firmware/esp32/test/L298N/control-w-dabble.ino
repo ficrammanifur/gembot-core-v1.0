@@ -7,15 +7,12 @@
 #define LED_BUILTIN 2
 
 // === PIN MOTOR (SUDAH AMAN, NO INPUT-ONLY) ===
-// MOTOR KANAN
 const int in1R = 12;
 const int in2R = 14;
-const int enR  = 13;
-
-// MOTOR KIRI
+const int enR = 13;
 const int in1L = 18;
 const int in2L = 5;
-const int enL  = 33;
+const int enL = 33;
 
 // === BLE CONFIG ===
 #define BLE_NAME "ROBOT-BLE"
@@ -24,7 +21,7 @@ const int enL  = 33;
 #define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
 // === BLE VAR ===
-BLEServer *pServer = NULL;
+BLEServer *pServer = NULL; 
 BLECharacteristic *pTxCharacteristic;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
