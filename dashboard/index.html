@@ -1,145 +1,399 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEMBOT Control Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gembot Control Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #020617;
+            color: #f8fafc;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Sidebar Kontrol */
+        .sidebar {
+            width: 200px;
+            background-color: #0f172a;
+            border-right: 1px solid #1e293b;
+            display: flex;
+            flex-direction: column;
+            padding: 0.75rem;
+            z-index: 20;
+        }
+
+        /* Main Viewport */
+        .viewport {
+            flex: 1;
+            position: relative;
+            background-color: #000;
+            overflow: hidden;
+        }
+
+        /* Diamond D-Pad Styling (PS Style) */
+        .d-pad-diamond {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 4px;
+            width: 130px;
+            margin: auto auto;
+        }
+
+        .btn-ps {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1;
+            transition: all 0.1s;
+            color: #94a3b8;
+            box-shadow: 0 4px 0 #0f172a;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-ps:active {
+            background-color: #06b6d4;
+            color: #000;
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #083344;
+        }
+
+        /* Positioning buttons in diamond grid */
+        #up { grid-area: 1 / 2 / 2 / 3; }
+        #left { grid-area: 2 / 1 / 3 / 2; }
+        #right { grid-area: 2 / 3 / 3 / 4; }
+        #down { grid-area: 3 / 2 / 4 / 3; }
+
+        /* Dashboard Widgets (Auto Mode) */
+        .widget {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 12px;
+            padding: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+
+        /* Widget Expand logic */
+        .widget.expanded {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            width: auto !important;
+            height: auto !important;
+            z-index: 50;
+        }
+
+        /* Chat UI */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 140px;
+        }
+        .chat-area {
+            font-family: monospace;
+            font-size: 10px;
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 6px;
+        }
+
+        /* Mode Visibility */
+        .mode-manual-only { display: flex; }
+        .mode-auto-only { display: none; }
+
+        body.auto-mode .mode-manual-only { display: none; }
+        body.auto-mode .mode-auto-only { display: block; }
+
+        .btn-talk.active {
+            background-color: #ef4444;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @media (orientation: portrait) {
+            #portrait-msg { display: flex !important; }
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1>GEMBOT Control Center</h1>
-                <div class="status-indicator">
-                    <span class="status-dot" id="connectionStatus"></span>
-                    <span id="statusText">Connecting...</span>
-                </div>
-            </div>
-        </header>
+<body class="manual-mode">
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Video Stream Panel -->
-            <section class="panel video-panel">
-                <h2>Live Camera Feed</h2>
-                <div class="video-container">
-                    <div id="videoStream" class="video-stream">
-                        <img id="streamImage" src="" alt="Camera Feed">
-                        <div class="stream-overlay">
-                            <div id="fps" class="fps-counter">0 FPS</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="video-controls">
-                    <button id="streamToggle" class="btn btn-primary">Start Stream</button>
-                </div>
-            </section>
-
-            <!-- Control Panel -->
-            <section class="panel control-panel">
-                <h2>Robot Control</h2>
-                
-                <!-- Movement Controls -->
-                <div class="control-section">
-                    <h3>Movement</h3>
-                    <div class="movement-controls">
-                        <button id="moveForward" class="btn btn-large" data-direction="forward">
-                            ↑ Forward
-                        </button>
-                        <div>
-                            <button id="moveLeft" class="btn btn-large" data-direction="left">
-                                ← Left
-                            </button>
-                            <button id="moveStop" class="btn btn-danger btn-large">
-                                ■ Stop
-                            </button>
-                            <button id="moveRight" class="btn btn-large" data-direction="right">
-                                Right →
-                            </button>
-                        </div>
-                        <button id="moveBackward" class="btn btn-large" data-direction="backward">
-                            ↓ Backward
-                        </button>
-                    </div>
-                    
-                    <div class="speed-control">
-                        <label for="speedSlider">Speed: <span id="speedValue">75</span>%</label>
-                        <input type="range" id="speedSlider" min="0" max="255" value="150">
-                    </div>
-                </div>
-
-                <!-- Voice Control -->
-                <div class="control-section">
-                    <h3>Voice Control</h3>
-                    <button id="speakButton" class="btn btn-primary btn-large">
-                        🎤 Hold to Speak
-                    </button>
-                    <div id="transcriptionResult" class="transcription">
-                        <p id="transcriptionText">Waiting for input...</p>
-                    </div>
-                </div>
-
-                <!-- Speak Function -->
-                <div class="control-section">
-                    <h3>Make Robot Speak</h3>
-                    <input type="text" id="speakInput" placeholder="Enter text to speak" class="text-input">
-                    <button id="speakSubmit" class="btn btn-primary">Speak</button>
-                </div>
-            </section>
-
-            <!-- Information Panel -->
-            <section class="panel info-panel">
-                <h2>System Information</h2>
-                
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>Robot State:</label>
-                        <span id="robotState">---</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Camera Status:</label>
-                        <span id="cameraStatus">---</span>
-                    </div>
-                    <div class="info-item">
-                        <label>LiDAR Status:</label>
-                        <span id="lidarStatus">---</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Objects Detected:</label>
-                        <span id="objectCount">0</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Path Clear:</label>
-                        <span id="pathStatus">Yes</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Closest Obstacle:</label>
-                        <span id="obstacleDistance">---</span>
-                    </div>
-                </div>
-
-                <!-- Detections List -->
-                <div class="detections-section">
-                    <h3>Object Detections</h3>
-                    <div id="detectionsList" class="detections-list">
-                        <p class="empty-state">No objects detected</p>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p>GEMBOT Control Dashboard v1.0 | 
-               Raspberry Pi: <span id="raspiStatus">Offline</span> | 
-               AI Server: <span id="aiStatus">Offline</span> | 
-               ESP32: <span id="esp32Status">Offline</span>
-            </p>
-        </footer>
+    <!-- Warning Landscape -->
+    <div id="portrait-msg" class="hidden fixed inset-0 bg-slate-950 z-[100] flex-col items-center justify-center text-center p-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" class="mb-4 rotate-90"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+        <h2 class="text-xl font-bold">PUTAR PERANGKAT</h2>
+        <p class="text-slate-500 text-sm mt-2">Gunakan mode landscape untuk kontrol optimal.</p>
     </div>
 
-    <script src="script.js"></script>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="flex items-center justify-between mb-2">
+                <h1 class="text-[10px] font-black tracking-widest text-cyan-500">GEMBOT_V2</h1>
+                <div id="wifi-dot" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></div>
+            </div>
+
+            <div class="mode-manual-only flex flex-col flex-1">
+                <!-- PS STYLE D-PAD -->
+                <div class="d-pad-diamond">
+                    <button class="btn-ps" id="up"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m18 15-6-6-6 6"/></svg></button>
+                    <button class="btn-ps" id="left"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg></button>
+                    <button class="btn-ps" id="right"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 6 6 6-6 6"/></svg></button>
+                    <button class="btn-ps" id="down"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg></button>
+                </div>
+            </div>
+
+            <div class="mode-auto-only space-y-2 mt-2">
+                <div class="bg-slate-800/40 p-2 rounded text-[9px] border border-slate-700">
+                    <span class="text-slate-500 block uppercase">Orientation</span>
+                    <span id="gyro-val" class="font-mono text-cyan-400">+0.000°</span>
+                </div>
+                <div class="bg-slate-800/40 p-2 rounded text-[9px] border border-slate-700">
+                    <span class="text-slate-500 block uppercase">Velocity</span>
+                    <span class="font-mono text-cyan-400">0.00 m/s</span>
+                </div>
+            </div>
+
+            <!-- Footer Sidebar -->
+            <div class="mt-auto space-y-2">
+                <div class="flex items-center justify-between bg-slate-900 p-2 rounded-lg border border-slate-800">
+                    <span id="mode-text" class="text-[9px] font-bold text-slate-500">MANUAL</span>
+                    <button id="mode-toggle" class="w-10 h-5 bg-slate-700 rounded-full relative transition-colors">
+                        <div id="toggle-circle" class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-all"></div>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="py-2 bg-slate-800 rounded-lg text-[9px] font-bold uppercase border border-slate-700 active:bg-slate-700" id="photo-btn">Photo</button>
+                    <button class="py-2 bg-slate-800 rounded-lg text-[9px] font-bold uppercase border border-slate-700 active:bg-slate-700">Logs</button>
+                </div>
+
+                <button id="talk-btn" class="btn-talk w-full py-3 bg-cyan-900/20 border border-cyan-500/30 rounded-lg text-[9px] font-bold text-cyan-400 flex flex-col items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-1"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                    PUSH TO TALK
+                </button>
+            </div>
+        </aside>
+
+        <!-- VIEWPORT -->
+        <main class="viewport" id="viewport-container">
+            
+            <!-- BG: Full Camera (Manual Mode Default) -->
+            <div id="cam-view" class="absolute inset-0 bg-black flex items-center justify-center transition-all duration-300">
+                <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#06b6d4 0.5px, transparent 0.5px); background-size: 20px 20px;"></div>
+                <div class="text-slate-800 font-mono text-[10px] tracking-[1em]">[ LIVE_SECURE_FEED ]</div>
+                
+                <!-- AI HUD (Manual Only) -->
+                <div class="mode-manual-only absolute inset-0 pointer-events-none p-6">
+                    <div class="border-l border-t border-cyan-500/30 w-10 h-10 absolute top-4 left-4"></div>
+                    <div class="border-r border-t border-cyan-500/30 w-10 h-10 absolute top-4 right-4"></div>
+                    <div class="border-l border-b border-cyan-500/30 w-10 h-10 absolute bottom-4 left-4"></div>
+                    <div class="border-r border-b border-cyan-500/30 w-10 h-10 absolute bottom-4 right-4"></div>
+                </div>
+            </div>
+
+            <!-- MODE AUTO: Dashboard Widgets -->
+            <div class="mode-auto-only absolute inset-0 overflow-hidden bg-[#050505]">
+                
+                <!-- Map Widget -->
+                <div id="map-widget" class="widget absolute top-4 left-4 w-64 h-48 flex flex-col group">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Nav_Map_V4</span>
+                        <button class="resize-btn text-slate-600 hover:text-cyan-400"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+                    </div>
+                    <div class="flex-1 bg-slate-950 rounded relative overflow-hidden border border-slate-800">
+                         <svg class="absolute inset-0 w-full h-full opacity-30">
+                            <path d="M 20 150 Q 100 50 200 150 T 400 100" fill="none" stroke="#06b6d4" stroke-width="2" stroke-dasharray="4" />
+                            <circle cx="20" cy="150" r="4" fill="#06b6d4" />
+                        </svg>
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                            <div class="w-3 h-3 bg-cyan-500 rounded-full animate-ping"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lidar Widget -->
+                <div class="widget absolute top-4 right-4 w-40 h-40 flex flex-col">
+                    <span class="text-[8px] font-bold text-slate-500 mb-1 uppercase tracking-tighter">Lidar_Scan</span>
+                    <canvas id="lidar-canvas" class="flex-1 rounded bg-slate-950 border border-slate-800"></canvas>
+                </div>
+
+                <!-- AI Chat Widget (Typed Input) -->
+                <div class="widget absolute bottom-4 left-4 w-72">
+                    <div class="chat-container">
+                        <span class="text-[8px] font-bold text-slate-500 mb-1 uppercase tracking-tighter">AI_Terminal</span>
+                        <div id="chat-box" class="chat-area scroll-smooth">
+                            <p class="text-slate-600 italic">[14:00] Gembot siap menerima instruksi.</p>
+                        </div>
+                        <div class="flex gap-2 border-t border-slate-800 pt-2">
+                            <input type="text" id="chat-input" placeholder="Ketik perintah..." class="flex-1 bg-transparent border-none text-[10px] text-cyan-100 outline-none placeholder:text-slate-700">
+                            <button id="send-btn" class="text-cyan-500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 7-7 7 7M12 5v14"/></svg></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mini Cam Widget -->
+                <div id="cam-mini-widget" class="widget absolute bottom-4 right-4 w-48 h-32 flex flex-col">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Cam_Main_Stream</span>
+                        <button class="resize-btn text-slate-600 hover:text-cyan-400"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+                    </div>
+                    <div class="flex-1 bg-black rounded flex items-center justify-center relative border border-slate-800 overflow-hidden">
+                        <div class="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                        <span class="text-[8px] text-slate-800 font-mono">STREAM_ACTIVE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Hud -->
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 font-mono text-[8px] text-slate-600 bg-black/40 px-3 py-1 rounded-full border border-white/5 pointer-events-none">
+                COORD: 6.2088°S, 106.8456°E // ALT: 2.15M // SAT: 09
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const body = document.body;
+        const modeToggle = document.getElementById('mode-toggle');
+        const modeText = document.getElementById('mode-text');
+        const toggleCircle = document.getElementById('toggle-circle');
+        const chatInput = document.getElementById('chat-input');
+        const chatBox = document.getElementById('chat-box');
+        const sendBtn = document.getElementById('send-btn');
+        const lidarCanvas = document.getElementById('lidar-canvas');
+        
+        let isAuto = false;
+
+        // --- Mode Switching ---
+        modeToggle.addEventListener('click', () => {
+            isAuto = !isAuto;
+            if (isAuto) {
+                body.classList.add('auto-mode');
+                modeText.innerText = "AUTO";
+                modeText.classList.replace('text-slate-500', 'text-cyan-500');
+                modeToggle.classList.replace('bg-slate-700', 'bg-cyan-500');
+                toggleCircle.style.left = '24px';
+                startLidarSimulation();
+            } else {
+                body.classList.remove('auto-mode');
+                modeText.innerText = "MANUAL";
+                modeText.classList.replace('text-cyan-500', 'text-slate-500');
+                modeToggle.classList.replace('bg-cyan-500', 'bg-slate-700');
+                toggleCircle.style.left = '4px';
+                // Reset expansions
+                document.querySelectorAll('.widget').forEach(w => w.classList.remove('expanded'));
+            }
+        });
+
+        // --- Widget Resizing ---
+        document.querySelectorAll('.resize-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const widget = e.target.closest('.widget');
+                const alreadyExpanded = widget.classList.contains('expanded');
+                
+                // Shrink all first
+                document.querySelectorAll('.widget').forEach(w => w.classList.remove('expanded'));
+                
+                // Toggle expansion
+                if (!alreadyExpanded) {
+                    widget.classList.add('expanded');
+                }
+            });
+        });
+
+        // --- Chat Logic ---
+        function addChatMessage(sender, text, isUser = false) {
+            const p = document.createElement('p');
+            p.className = isUser ? "text-cyan-400 mt-1" : "text-slate-300 mt-1";
+            p.innerHTML = `<span class="opacity-50 text-[8px]">${isUser ? 'USER' : 'GEM'}</span>: ${text}`;
+            chatBox.appendChild(p);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        const handleSend = () => {
+            const val = chatInput.value.trim();
+            if(!val) return;
+            addChatMessage('USER', val, true);
+            chatInput.value = '';
+            
+            // Mock Response
+            setTimeout(() => {
+                addChatMessage('GEM', `Memproses perintah: ${val.toUpperCase()}... Berhasil.`);
+            }, 800);
+        };
+
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleSend());
+
+        // --- Lidar Simulation ---
+        function startLidarSimulation() {
+            const ctx = lidarCanvas.getContext('2d');
+            const w = lidarCanvas.width = 160;
+            const h = lidarCanvas.height = 160;
+            
+            function draw() {
+                if (!isAuto) return;
+                ctx.clearRect(0, 0, w, h);
+                
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.15)';
+                ctx.beginPath(); ctx.arc(w/2, h/2, 25, 0, Math.PI*2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(w/2, h/2, 50, 0, Math.PI*2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(w/2, h/2, 75, 0, Math.PI*2); ctx.stroke();
+
+                for(let i=0; i<35; i++) {
+                    const angle = (Date.now() / 1000) + i;
+                    const dist = 30 + Math.sin(angle * 2) * 40;
+                    const x = w/2 + Math.cos(angle) * dist;
+                    const y = h/2 + Math.sin(angle) * dist;
+                    
+                    ctx.fillStyle = i % 5 === 0 ? '#f43f5e' : '#22c55e';
+                    ctx.globalAlpha = Math.random();
+                    ctx.fillRect(x, y, 2, 2);
+                }
+                
+                document.getElementById('gyro-val').innerText = `${(Math.sin(Date.now()/500) * 5).toFixed(3)}°`;
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // --- D-Pad Digital Feedback ---
+        ['up', 'down', 'left', 'right'].forEach(id => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                console.log(`Command sent: ${id.toUpperCase()}`);
+            });
+        });
+
+        // --- Photo Action ---
+        document.getElementById('photo-btn').addEventListener('click', () => {
+            const flash = document.createElement('div');
+            flash.className = "fixed inset-0 bg-white z-[100] opacity-80 transition-opacity duration-300";
+            document.body.appendChild(flash);
+            setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 300); }, 50);
+        });
+    </script>
 </body>
 </html>
