@@ -276,7 +276,7 @@ void reconnectMQTT() {
   
   unsigned long now = millis();
   if (now - lastMqttReconnect < 5000) return;
-  lastMqqttReconnect = now;
+  lastMqttReconnect = now;
   
   Serial.print("📡 Connecting MQTT...");
   if (mqttClient.connect("ESP32_Gembot")) {
