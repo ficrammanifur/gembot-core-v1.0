@@ -1,13 +1,13 @@
 #define SPEED 200
 
 // === Motor Driver Pins ===
-#define MOTOR_ENA 33  // Motor kanan (PWM)
-#define MOTOR_IN1 25  // Motor kanan
-#define MOTOR_IN2 26
+#define MOTOR_ENA 13  // Motor kanan (PWM)
+#define MOTOR_IN1 12  // Motor kanan
+#define MOTOR_IN2 14
 
-#define MOTOR_ENB 12   // Motor kiri (PWM)
-#define MOTOR_IN3 14  // Motor kiri
-#define MOTOR_IN4 27
+#define MOTOR_ENB 33   // Motor kiri (PWM)
+#define MOTOR_IN3 5  // Motor kiri
+#define MOTOR_IN4 18
 
 void setup() {
   Serial.begin(9600);
