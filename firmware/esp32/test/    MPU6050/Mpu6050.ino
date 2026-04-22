@@ -8,12 +8,12 @@
 MPU6050 accelgyro;
 
 // Offsets hasil kalibrasi
-int ax_offset = -7844;
-int ay_offset = -5615;
-int az_offset = 8636;
-int gx_offset = -26;
-int gy_offset = -8;
-int gz_offset = -67;
+int ax_offset = -7011;
+int ay_offset = -6660;
+int az_offset = 8628;
+int gx_offset = -71;
+int gy_offset = -64;
+int gz_offset = -55;
 
 int16_t ax, ay, az, gx, gy, gz;
 
