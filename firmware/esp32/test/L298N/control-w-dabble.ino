@@ -10,8 +10,8 @@
 const int in1R = 12;
 const int in2R = 14;
 const int enR = 13;
-const int in1L = 18;
-const int in2L = 5;
+const int in1L = 5;
+const int in2L = 18;
 const int enL = 33;
 
 // === BLE CONFIG ===
