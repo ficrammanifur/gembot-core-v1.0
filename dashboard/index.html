@@ -1,399 +1,384 @@
+cat > templates/index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gembot Control Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gembot - Smart Robot Control</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            background-color: #020617;
-            color: #f8fafc;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-        }
-
-        .app-container {
-            display: flex;
-            height: 100vh;
-            width: 100vw;
-        }
-
-        /* Sidebar Kontrol */
-        .sidebar {
-            width: 200px;
-            background-color: #0f172a;
-            border-right: 1px solid #1e293b;
-            display: flex;
-            flex-direction: column;
-            padding: 0.75rem;
-            z-index: 20;
-        }
-
-        /* Main Viewport */
-        .viewport {
-            flex: 1;
-            position: relative;
-            background-color: #000;
-            overflow: hidden;
-        }
-
-        /* Diamond D-Pad Styling (PS Style) */
-        .d-pad-diamond {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 4px;
-            width: 130px;
-            margin: auto auto;
-        }
-
-        .btn-ps {
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            aspect-ratio: 1;
-            transition: all 0.1s;
-            color: #94a3b8;
-            box-shadow: 0 4px 0 #0f172a;
+        .btn-control {
+            transition: all 0.1s ease;
+            user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
-
-        .btn-ps:active {
-            background-color: #06b6d4;
-            color: #000;
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #083344;
+        .btn-control:active {
+            transform: scale(0.95);
         }
-
-        /* Positioning buttons in diamond grid */
-        #up { grid-area: 1 / 2 / 2 / 3; }
-        #left { grid-area: 2 / 1 / 3 / 2; }
-        #right { grid-area: 2 / 3 / 3 / 4; }
-        #down { grid-area: 3 / 2 / 4 / 3; }
-
-        /* Dashboard Widgets (Auto Mode) */
-        .widget {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(51, 65, 85, 0.5);
-            border-radius: 12px;
-            padding: 10px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 10;
+        .chat-message {
+            animation: fadeIn 0.3s ease;
         }
-
-        /* Widget Expand logic */
-        .widget.expanded {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            width: auto !important;
-            height: auto !important;
-            z-index: 50;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Chat UI */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 140px;
-        }
-        .chat-area {
-            font-family: monospace;
-            font-size: 10px;
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 6px;
-        }
-
-        /* Mode Visibility */
-        .mode-manual-only { display: flex; }
-        .mode-auto-only { display: none; }
-
-        body.auto-mode .mode-manual-only { display: none; }
-        body.auto-mode .mode-auto-only { display: block; }
-
-        .btn-talk.active {
-            background-color: #ef4444;
+        .pulse {
             animation: pulse 1s infinite;
         }
-
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+            50% { opacity: 0.5; }
         }
-
-        @media (orientation: portrait) {
-            #portrait-msg { display: flex !important; }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+        .video-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
     </style>
 </head>
-<body class="manual-mode">
-
-    <!-- Warning Landscape -->
-    <div id="portrait-msg" class="hidden fixed inset-0 bg-slate-950 z-[100] flex-col items-center justify-center text-center p-6">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" class="mb-4 rotate-90"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-        <h2 class="text-xl font-bold">PUTAR PERANGKAT</h2>
-        <p class="text-slate-500 text-sm mt-2">Gunakan mode landscape untuk kontrol optimal.</p>
-    </div>
-
-    <div class="app-container">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="flex items-center justify-between mb-2">
-                <h1 class="text-[10px] font-black tracking-widest text-cyan-500">GEMBOT_V2</h1>
-                <div id="wifi-dot" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></div>
+<body class="bg-slate-900 text-white">
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    GEMBOT
+                </h1>
+                <span class="text-xs text-slate-400">v2.0</span>
             </div>
+            <div class="flex items-center space-x-4">
+                <div id="mqtt-status" class="flex items-center space-x-2">
+                    <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                    <span class="text-xs text-slate-400">MQTT</span>
+                </div>
+                <div id="ai-status" class="flex items-center space-x-2">
+                    <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                    <span class="text-xs text-slate-400">AI</span>
+                </div>
+            </div>
+        </div>
+    </header>
 
-            <div class="mode-manual-only flex flex-col flex-1">
-                <!-- PS STYLE D-PAD -->
-                <div class="d-pad-diamond">
-                    <button class="btn-ps" id="up"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m18 15-6-6-6 6"/></svg></button>
-                    <button class="btn-ps" id="left"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg></button>
-                    <button class="btn-ps" id="right"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 6 6 6-6 6"/></svg></button>
-                    <button class="btn-ps" id="down"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg></button>
+    <div class="flex pt-16 h-screen">
+        <!-- Sidebar - Controls -->
+        <aside class="w-80 bg-slate-800 border-r border-slate-700 flex flex-col">
+            <!-- D-Pad -->
+            <div class="p-6 border-b border-slate-700">
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-4">Manual Control</h3>
+                <div class="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
+                    <div></div>
+                    <button id="btn-up" class="btn-control bg-slate-700 hover:bg-slate-600 active:bg-cyan-600 rounded-lg py-4 text-2xl">▲</button>
+                    <div></div>
+                    <button id="btn-left" class="btn-control bg-slate-700 hover:bg-slate-600 active:bg-cyan-600 rounded-lg py-4 text-2xl">◀</button>
+                    <button id="btn-stop" class="btn-control bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-lg py-4 text-xl font-bold">STOP</button>
+                    <button id="btn-right" class="btn-control bg-slate-700 hover:bg-slate-600 active:bg-cyan-600 rounded-lg py-4 text-2xl">▶</button>
+                    <div></div>
+                    <button id="btn-down" class="btn-control bg-slate-700 hover:bg-slate-600 active:bg-cyan-600 rounded-lg py-4 text-2xl">▼</button>
+                    <div></div>
                 </div>
             </div>
 
-            <div class="mode-auto-only space-y-2 mt-2">
-                <div class="bg-slate-800/40 p-2 rounded text-[9px] border border-slate-700">
-                    <span class="text-slate-500 block uppercase">Orientation</span>
-                    <span id="gyro-val" class="font-mono text-cyan-400">+0.000°</span>
-                </div>
-                <div class="bg-slate-800/40 p-2 rounded text-[9px] border border-slate-700">
-                    <span class="text-slate-500 block uppercase">Velocity</span>
-                    <span class="font-mono text-cyan-400">0.00 m/s</span>
+            <!-- Sensor Data -->
+            <div class="p-6 border-b border-slate-700">
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-4">Sensor Data</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Command:</span>
+                        <span id="sensor-cmd" class="font-mono text-cyan-400">STOP</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Speed:</span>
+                        <span id="sensor-speed" class="font-mono">0.00 km/h</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Satellites:</span>
+                        <span id="sensor-sat" class="font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Latitude:</span>
+                        <span id="sensor-lat" class="font-mono text-xs">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Longitude:</span>
+                        <span id="sensor-lng" class="font-mono text-xs">-</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Footer Sidebar -->
-            <div class="mt-auto space-y-2">
-                <div class="flex items-center justify-between bg-slate-900 p-2 rounded-lg border border-slate-800">
-                    <span id="mode-text" class="text-[9px] font-bold text-slate-500">MANUAL</span>
-                    <button id="mode-toggle" class="w-10 h-5 bg-slate-700 rounded-full relative transition-colors">
-                        <div id="toggle-circle" class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-all"></div>
+            <!-- Chat Input -->
+            <div class="flex-1 p-6 flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-4">AI Chat</h3>
+                <div id="chat-messages" class="flex-1 overflow-y-auto mb-4 space-y-2 text-sm" style="max-height: 300px;">
+                    <div class="text-slate-500 text-center text-xs">Gembot siap membantu</div>
+                </div>
+                <div class="flex space-x-2">
+                    <input type="text" id="chat-input" placeholder="Ketik perintah atau pertanyaan..."
+                           class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-cyan-500">
+                    <button id="chat-send" class="bg-cyan-600 hover:bg-cyan-700 rounded-lg px-4 py-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
                     </button>
                 </div>
-                
-                <div class="grid grid-cols-2 gap-2">
-                    <button class="py-2 bg-slate-800 rounded-lg text-[9px] font-bold uppercase border border-slate-700 active:bg-slate-700" id="photo-btn">Photo</button>
-                    <button class="py-2 bg-slate-800 rounded-lg text-[9px] font-bold uppercase border border-slate-700 active:bg-slate-700">Logs</button>
-                </div>
-
-                <button id="talk-btn" class="btn-talk w-full py-3 bg-cyan-900/20 border border-cyan-500/30 rounded-lg text-[9px] font-bold text-cyan-400 flex flex-col items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-1"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-                    PUSH TO TALK
+                <button id="voice-btn" class="mt-3 bg-purple-600 hover:bg-purple-700 rounded-lg px-4 py-2 text-sm flex items-center justify-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                    </svg>
+                    <span>Voice Command</span>
                 </button>
             </div>
         </aside>
 
-        <!-- VIEWPORT -->
-        <main class="viewport" id="viewport-container">
+        <!-- Main Content - Video Feed -->
+        <main class="flex-1 bg-black relative">
+            <div class="video-container">
+                <img id="video-feed" src="/api/camera/stream" class="w-full h-full object-contain" alt="Camera Feed" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 480%22%3E%3Crect width=%22640%22 height=%22480%22 fill=%22%231e293b%22/%3E%3Ctext x=%22320%22 y=%22240%22 text-anchor=%22middle%22 fill=%22%2364748b%22 font-family=%22monospace%22%3ECamera Not Available%3C/text%3E%3C/svg%3E'">
+            </div>
             
-            <!-- BG: Full Camera (Manual Mode Default) -->
-            <div id="cam-view" class="absolute inset-0 bg-black flex items-center justify-center transition-all duration-300">
-                <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#06b6d4 0.5px, transparent 0.5px); background-size: 20px 20px;"></div>
-                <div class="text-slate-800 font-mono text-[10px] tracking-[1em]">[ LIVE_SECURE_FEED ]</div>
-                
-                <!-- AI HUD (Manual Only) -->
-                <div class="mode-manual-only absolute inset-0 pointer-events-none p-6">
-                    <div class="border-l border-t border-cyan-500/30 w-10 h-10 absolute top-4 left-4"></div>
-                    <div class="border-r border-t border-cyan-500/30 w-10 h-10 absolute top-4 right-4"></div>
-                    <div class="border-l border-b border-cyan-500/30 w-10 h-10 absolute bottom-4 left-4"></div>
-                    <div class="border-r border-b border-cyan-500/30 w-10 h-10 absolute bottom-4 right-4"></div>
+            <!-- Overlay HUD -->
+            <div class="absolute top-4 left-4 right-4 pointer-events-none">
+                <div class="bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 inline-block">
+                    <div class="text-xs text-cyan-400 font-mono">LIVE STREAM</div>
                 </div>
             </div>
-
-            <!-- MODE AUTO: Dashboard Widgets -->
-            <div class="mode-auto-only absolute inset-0 overflow-hidden bg-[#050505]">
-                
-                <!-- Map Widget -->
-                <div id="map-widget" class="widget absolute top-4 left-4 w-64 h-48 flex flex-col group">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Nav_Map_V4</span>
-                        <button class="resize-btn text-slate-600 hover:text-cyan-400"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
-                    </div>
-                    <div class="flex-1 bg-slate-950 rounded relative overflow-hidden border border-slate-800">
-                         <svg class="absolute inset-0 w-full h-full opacity-30">
-                            <path d="M 20 150 Q 100 50 200 150 T 400 100" fill="none" stroke="#06b6d4" stroke-width="2" stroke-dasharray="4" />
-                            <circle cx="20" cy="150" r="4" fill="#06b6d4" />
-                        </svg>
-                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                            <div class="w-3 h-3 bg-cyan-500 rounded-full animate-ping"></div>
-                        </div>
-                    </div>
+            
+            <!-- Recording Indicator -->
+            <div class="absolute top-4 right-4">
+                <div class="flex items-center space-x-2 bg-black/50 rounded-full px-3 py-1">
+                    <div class="w-2 h-2 rounded-full bg-red-500 pulse"></div>
+                    <span class="text-xs text-white">REC</span>
                 </div>
-
-                <!-- Lidar Widget -->
-                <div class="widget absolute top-4 right-4 w-40 h-40 flex flex-col">
-                    <span class="text-[8px] font-bold text-slate-500 mb-1 uppercase tracking-tighter">Lidar_Scan</span>
-                    <canvas id="lidar-canvas" class="flex-1 rounded bg-slate-950 border border-slate-800"></canvas>
-                </div>
-
-                <!-- AI Chat Widget (Typed Input) -->
-                <div class="widget absolute bottom-4 left-4 w-72">
-                    <div class="chat-container">
-                        <span class="text-[8px] font-bold text-slate-500 mb-1 uppercase tracking-tighter">AI_Terminal</span>
-                        <div id="chat-box" class="chat-area scroll-smooth">
-                            <p class="text-slate-600 italic">[14:00] Gembot siap menerima instruksi.</p>
-                        </div>
-                        <div class="flex gap-2 border-t border-slate-800 pt-2">
-                            <input type="text" id="chat-input" placeholder="Ketik perintah..." class="flex-1 bg-transparent border-none text-[10px] text-cyan-100 outline-none placeholder:text-slate-700">
-                            <button id="send-btn" class="text-cyan-500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 7-7 7 7M12 5v14"/></svg></button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Mini Cam Widget -->
-                <div id="cam-mini-widget" class="widget absolute bottom-4 right-4 w-48 h-32 flex flex-col">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Cam_Main_Stream</span>
-                        <button class="resize-btn text-slate-600 hover:text-cyan-400"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
-                    </div>
-                    <div class="flex-1 bg-black rounded flex items-center justify-center relative border border-slate-800 overflow-hidden">
-                        <div class="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-                        <span class="text-[8px] text-slate-800 font-mono">STREAM_ACTIVE</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Global Hud -->
-            <div class="absolute top-4 left-1/2 -translate-x-1/2 font-mono text-[8px] text-slate-600 bg-black/40 px-3 py-1 rounded-full border border-white/5 pointer-events-none">
-                COORD: 6.2088°S, 106.8456°E // ALT: 2.15M // SAT: 09
             </div>
         </main>
     </div>
 
     <script>
-        const body = document.body;
-        const modeToggle = document.getElementById('mode-toggle');
-        const modeText = document.getElementById('mode-text');
-        const toggleCircle = document.getElementById('toggle-circle');
-        const chatInput = document.getElementById('chat-input');
-        const chatBox = document.getElementById('chat-box');
-        const sendBtn = document.getElementById('send-btn');
-        const lidarCanvas = document.getElementById('lidar-canvas');
+        // Socket.IO Connection
+        const socket = io();
         
-        let isAuto = false;
-
-        // --- Mode Switching ---
-        modeToggle.addEventListener('click', () => {
-            isAuto = !isAuto;
-            if (isAuto) {
-                body.classList.add('auto-mode');
-                modeText.innerText = "AUTO";
-                modeText.classList.replace('text-slate-500', 'text-cyan-500');
-                modeToggle.classList.replace('bg-slate-700', 'bg-cyan-500');
-                toggleCircle.style.left = '24px';
-                startLidarSimulation();
-            } else {
-                body.classList.remove('auto-mode');
-                modeText.innerText = "MANUAL";
-                modeText.classList.replace('text-cyan-500', 'text-slate-500');
-                modeToggle.classList.replace('bg-cyan-500', 'bg-slate-700');
-                toggleCircle.style.left = '4px';
-                // Reset expansions
-                document.querySelectorAll('.widget').forEach(w => w.classList.remove('expanded'));
-            }
+        // DOM Elements
+        const btnUp = document.getElementById('btn-up');
+        const btnDown = document.getElementById('btn-down');
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnStop = document.getElementById('btn-stop');
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
+        const chatMessages = document.getElementById('chat-messages');
+        const voiceBtn = document.getElementById('voice-btn');
+        
+        // State
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        
+        // Socket Events
+        socket.on('connect', () => {
+            console.log('Connected to server');
         });
-
-        // --- Widget Resizing ---
-        document.querySelectorAll('.resize-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const widget = e.target.closest('.widget');
-                const alreadyExpanded = widget.classList.contains('expanded');
-                
-                // Shrink all first
-                document.querySelectorAll('.widget').forEach(w => w.classList.remove('expanded'));
-                
-                // Toggle expansion
-                if (!alreadyExpanded) {
-                    widget.classList.add('expanded');
-                }
+        
+        socket.on('sensor_update', (data) => {
+            document.getElementById('sensor-cmd').textContent = data.command || 'STOP';
+            document.getElementById('sensor-speed').textContent = `${(data.speed || 0).toFixed(2)} km/h`;
+            document.getElementById('sensor-sat').textContent = data.satellites || 0;
+            document.getElementById('sensor-lat').textContent = data.lat ? data.lat.toFixed(6) : '-';
+            document.getElementById('sensor-lng').textContent = data.lng ? data.lng.toFixed(6) : '-';
+        });
+        
+        socket.on('robot_status', (data) => {
+            addChatMessage('system', `Robot: ${data.command}`, 'text-yellow-500');
+        });
+        
+        socket.on('chat_response', (data) => {
+            addChatMessage('bot', data.response);
+        });
+        
+        // Control Functions
+        function sendCommand(cmd) {
+            fetch('/api/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: cmd })
             });
-        });
-
-        // --- Chat Logic ---
-        function addChatMessage(sender, text, isUser = false) {
-            const p = document.createElement('p');
-            p.className = isUser ? "text-cyan-400 mt-1" : "text-slate-300 mt-1";
-            p.innerHTML = `<span class="opacity-50 text-[8px]">${isUser ? 'USER' : 'GEM'}</span>: ${text}`;
-            chatBox.appendChild(p);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            socket.emit('command', { command: cmd });
         }
-
-        const handleSend = () => {
-            const val = chatInput.value.trim();
-            if(!val) return;
-            addChatMessage('USER', val, true);
+        
+        // Button Events
+        btnUp.addEventListener('click', () => sendCommand('maju'));
+        btnDown.addEventListener('click', () => sendCommand('mundur'));
+        btnLeft.addEventListener('click', () => sendCommand('kiri'));
+        btnRight.addEventListener('click', () => sendCommand('kanan'));
+        btnStop.addEventListener('click', () => sendCommand('stop'));
+        
+        // Keyboard Controls
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'w') sendCommand('maju');
+            else if (key === 's') sendCommand('mundur');
+            else if (key === 'a') sendCommand('kiri');
+            else if (key === 'd') sendCommand('kanan');
+            else if (key === 'x' || key === ' ') sendCommand('stop');
+        });
+        
+        // Chat Functions
+        function addChatMessage(sender, message, color = 'text-cyan-400') {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-message ${color}`;
+            const time = new Date().toLocaleTimeString();
+            const senderName = sender === 'user' ? 'You' : (sender === 'bot' ? 'Gembot' : 'System');
+            msgDiv.innerHTML = `<span class="text-xs text-slate-500">[${time}]</span> <strong>${senderName}:</strong> ${message}`;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Limit messages
+            while (chatMessages.children.length > 50) {
+                chatMessages.removeChild(chatMessages.firstChild);
+            }
+        }
+        
+        async function sendChatMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            addChatMessage('user', message, 'text-white');
             chatInput.value = '';
             
-            // Mock Response
-            setTimeout(() => {
-                addChatMessage('GEM', `Memproses perintah: ${val.toUpperCase()}... Berhasil.`);
-            }, 800);
-        };
-
-        sendBtn.addEventListener('click', handleSend);
-        chatInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleSend());
-
-        // --- Lidar Simulation ---
-        function startLidarSimulation() {
-            const ctx = lidarCanvas.getContext('2d');
-            const w = lidarCanvas.width = 160;
-            const h = lidarCanvas.height = 160;
-            
-            function draw() {
-                if (!isAuto) return;
-                ctx.clearRect(0, 0, w, h);
-                
-                ctx.strokeStyle = 'rgba(6, 182, 212, 0.15)';
-                ctx.beginPath(); ctx.arc(w/2, h/2, 25, 0, Math.PI*2); ctx.stroke();
-                ctx.beginPath(); ctx.arc(w/2, h/2, 50, 0, Math.PI*2); ctx.stroke();
-                ctx.beginPath(); ctx.arc(w/2, h/2, 75, 0, Math.PI*2); ctx.stroke();
-
-                for(let i=0; i<35; i++) {
-                    const angle = (Date.now() / 1000) + i;
-                    const dist = 30 + Math.sin(angle * 2) * 40;
-                    const x = w/2 + Math.cos(angle) * dist;
-                    const y = h/2 + Math.sin(angle) * dist;
-                    
-                    ctx.fillStyle = i % 5 === 0 ? '#f43f5e' : '#22c55e';
-                    ctx.globalAlpha = Math.random();
-                    ctx.fillRect(x, y, 2, 2);
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    addChatMessage('bot', data.response);
+                } else {
+                    addChatMessage('bot', 'Maaf, terjadi kesalahan.', 'text-red-400');
                 }
-                
-                document.getElementById('gyro-val').innerText = `${(Math.sin(Date.now()/500) * 5).toFixed(3)}°`;
-                requestAnimationFrame(draw);
+            } catch (error) {
+                console.error('Chat error:', error);
+                addChatMessage('bot', 'Maaf, terjadi kesalahan.', 'text-red-400');
             }
-            draw();
         }
-
-        // --- D-Pad Digital Feedback ---
-        ['up', 'down', 'left', 'right'].forEach(id => {
-            const btn = document.getElementById(id);
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                console.log(`Command sent: ${id.toUpperCase()}`);
-            });
+        
+        chatSend.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
         });
-
-        // --- Photo Action ---
-        document.getElementById('photo-btn').addEventListener('click', () => {
-            const flash = document.createElement('div');
-            flash.className = "fixed inset-0 bg-white z-[100] opacity-80 transition-opacity duration-300";
-            document.body.appendChild(flash);
-            setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 300); }, 50);
+        
+        // Voice Recording
+        voiceBtn.addEventListener('click', async () => {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        
+                        addChatMessage('system', 'Memproses suara...', 'text-yellow-500');
+                        
+                        try {
+                            const response = await fetch('/api/audio/upload', {
+                                method: 'POST',
+                                body: audioBlob
+                            });
+                            const data = await response.json();
+                            if (data.success) {
+                                addChatMessage('user', `🎤: ${data.text}`, 'text-white');
+                                addChatMessage('bot', data.response);
+                            } else {
+                                addChatMessage('bot', 'Maaf, suara tidak dikenali.', 'text-red-400');
+                            }
+                        } catch (error) {
+                            console.error('Voice error:', error);
+                            addChatMessage('bot', 'Error processing voice.', 'text-red-400');
+                        }
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    voiceBtn.classList.add('bg-red-600');
+                    voiceBtn.classList.remove('bg-purple-600');
+                    voiceBtn.querySelector('span').textContent = 'Recording...';
+                    
+                    // Auto stop after 5 seconds
+                    setTimeout(() => {
+                        if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
+                            mediaRecorder.stop();
+                            isRecording = false;
+                            voiceBtn.classList.remove('bg-red-600');
+                            voiceBtn.classList.add('bg-purple-600');
+                            voiceBtn.querySelector('span').textContent = 'Voice Command';
+                        }
+                    }, 5000);
+                    
+                } catch (error) {
+                    console.error('Microphone error:', error);
+                    addChatMessage('bot', 'Akses mikrofon ditolak.', 'text-red-400');
+                }
+            } else {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    voiceBtn.classList.remove('bg-red-600');
+                    voiceBtn.classList.add('bg-purple-600');
+                    voiceBtn.querySelector('span').textContent = 'Voice Command';
+                }
+            }
         });
+        
+        // Update Status
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                const mqttDot = document.querySelector('#mqtt-status .w-2');
+                const aiDot = document.querySelector('#ai-status .w-2');
+                
+                if (mqttDot) {
+                    mqttDot.className = `w-2 h-2 rounded-full ${data.mqtt ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`;
+                }
+                if (aiDot) {
+                    aiDot.className = `w-2 h-2 rounded-full ${data.ai ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`;
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        }
+        
+        // Periodic status update
+        setInterval(updateStatus, 5000);
+        updateStatus();
+        
+        // Initial welcome
+        setTimeout(() => {
+            addChatMessage('bot', 'Halo! Saya Gembot, asisten robot pintar Anda. Ada yang bisa saya bantu?');
+        }, 1000);
+        
+        console.log('Gembot UI Ready!');
     </script>
 </body>
 </html>
+EOF
+
+echo "✅ UI telah diupdate!"
