@@ -33,15 +33,15 @@ void stopMotors() {
 }
 
 void moveForward(int speed) {
-  digitalWrite(in1R, LOW); digitalWrite(in2R, HIGH);
-  digitalWrite(in1L, LOW); digitalWrite(in2L, HIGH);
+  digitalWrite(in1R, HIGH); digitalWrite(in2R, LOW);
+  digitalWrite(in1L, HIGH); digitalWrite(in2L, LOW);
   analogWrite(enR, speed);
   analogWrite(enL, speed);
 }
 
 void moveBackward(int speed) {
-  digitalWrite(in1R, HIGH); digitalWrite(in2R, LOW);
-  digitalWrite(in1L, HIGH); digitalWrite(in2L, LOW);
+  digitalWrite(in1R, LOW); digitalWrite(in2R, HIGH);
+  digitalWrite(in1L, LOW); digitalWrite(in2L, HIGH);
   analogWrite(enR, speed);
   analogWrite(enL, speed);
 }
