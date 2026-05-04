@@ -26,8 +26,8 @@ void setup() {
   pinMode(in1L, OUTPUT);
   pinMode(in2L, OUTPUT);
 
-  // PWM SETUP - NEW API untuk ESP32 Arduino Core 3.x
-  ledcAttach(enR, 20000, 8);   // pin, frequency, resolution
+  // PWM SETUP (ESP32 Arduino Core 3.x)
+  ledcAttach(enR, 20000, 8);
   ledcAttach(enL, 20000, 8);
 
   stopMotor();
@@ -87,20 +87,27 @@ void backward() {
   ledcWrite(enL, 180);
 }
 
+// ====== FIXED ======
 void left() {
+  // belok kiri = motor kanan maju, motor kiri mundur
   digitalWrite(in1R, HIGH);
   digitalWrite(in2R, LOW);
+
   digitalWrite(in1L, LOW);
   digitalWrite(in2L, HIGH);
+
   ledcWrite(enR, 180);
   ledcWrite(enL, 180);
 }
 
 void right() {
+  // belok kanan = motor kanan mundur, motor kiri maju
   digitalWrite(in1R, LOW);
   digitalWrite(in2R, HIGH);
+
   digitalWrite(in1L, HIGH);
   digitalWrite(in2L, LOW);
+
   ledcWrite(enR, 180);
   ledcWrite(enL, 180);
 }
@@ -133,7 +140,7 @@ void loop() {
       Serial.println("STOP");
     }
     else {
-      // ===== AUDIO STREAM (jika bukan command) =====
+      // ===== AUDIO STREAM =====
       int len = Serial.readBytes(buffer, sizeof(buffer));
       if (len > 0) {
         size_t written;
