@@ -16,6 +16,9 @@
 
 uint8_t buffer[512];
 
+// Kecepatan motor (0-255)
+#define MOTOR_SPEED 200
+
 // ================= SETUP =================
 void setup() {
   Serial.begin(115200);
@@ -25,6 +28,12 @@ void setup() {
   pinMode(in2R, OUTPUT);
   pinMode(in1L, OUTPUT);
   pinMode(in2L, OUTPUT);
+  
+  // PENTING: Set enable pins HIGH untuk mengaktifkan motor driver
+  pinMode(enR, OUTPUT);
+  pinMode(enL, OUTPUT);
+  digitalWrite(enR, HIGH);  // Aktifkan driver motor kanan
+  digitalWrite(enL, HIGH);  // Aktifkan driver motor kiri
 
   // PWM SETUP (ESP32 Arduino Core 3.x)
   ledcAttach(enR, 20000, 8);
@@ -57,6 +66,7 @@ void setup() {
   i2s_set_pin(I2S_PORT, &pin_config);
 
   Serial.println("GEMBOT READY");
+  Serial.println("Commands: FORWARD, BACKWARD, LEFT, RIGHT, STOP");
 }
 
 // ================= MOTOR FUNCTIONS =================
@@ -74,8 +84,9 @@ void forward() {
   digitalWrite(in2R, LOW);
   digitalWrite(in1L, HIGH);
   digitalWrite(in2L, LOW);
-  ledcWrite(enR, 180);
-  ledcWrite(enL, 180);
+  ledcWrite(enR, MOTOR_SPEED);
+  ledcWrite(enL, MOTOR_SPEED);
+  Serial.println("→ FORWARD");
 }
 
 void backward() {
@@ -83,33 +94,31 @@ void backward() {
   digitalWrite(in2R, HIGH);
   digitalWrite(in1L, LOW);
   digitalWrite(in2L, HIGH);
-  ledcWrite(enR, 180);
-  ledcWrite(enL, 180);
+  ledcWrite(enR, MOTOR_SPEED);
+  ledcWrite(enL, MOTOR_SPEED);
+  Serial.println("→ BACKWARD");
 }
 
-// ====== FIXED ======
 void left() {
-  // belok kiri = motor kanan maju, motor kiri mundur
-  digitalWrite(in1R, HIGH);
-  digitalWrite(in2R, LOW);
-
-  digitalWrite(in1L, LOW);
-  digitalWrite(in2L, HIGH);
-
-  ledcWrite(enR, 180);
-  ledcWrite(enL, 180);
+  // BELOK KIRI (sama seperti BLE)
+  digitalWrite(in1R, LOW);   // Motor kanan mundur
+  digitalWrite(in2R, HIGH);
+  digitalWrite(in1L, HIGH);  // Motor kiri maju
+  digitalWrite(in2L, LOW);
+  ledcWrite(enR, MOTOR_SPEED);
+  ledcWrite(enL, MOTOR_SPEED);
+  Serial.println("→ LEFT");
 }
 
 void right() {
-  // belok kanan = motor kanan mundur, motor kiri maju
-  digitalWrite(in1R, LOW);
-  digitalWrite(in2R, HIGH);
-
-  digitalWrite(in1L, HIGH);
-  digitalWrite(in2L, LOW);
-
-  ledcWrite(enR, 180);
-  ledcWrite(enL, 180);
+  // BELOK KANAN (sama seperti BLE)
+  digitalWrite(in1R, HIGH);  // Motor kanan maju
+  digitalWrite(in2R, LOW);
+  digitalWrite(in1L, LOW);   // Motor kiri mundur
+  digitalWrite(in2L, HIGH);
+  ledcWrite(enR, MOTOR_SPEED);
+  ledcWrite(enL, MOTOR_SPEED);
+  Serial.println("→ RIGHT");
 }
 
 // ================= LOOP =================
@@ -117,30 +126,28 @@ void loop() {
   if (Serial.available()) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
+    cmd.toUpperCase();  // Biar case insensitive
 
     // ===== COMMAND MOTOR =====
-    if (cmd == "FORWARD") {
+    if (cmd == "FORWARD" || cmd == "F") {
       forward();
-      Serial.println("MAJU");
     }
-    else if (cmd == "BACKWARD") {
+    else if (cmd == "BACKWARD" || cmd == "B") {
       backward();
-      Serial.println("MUNDUR");
     }
-    else if (cmd == "LEFT") {
+    else if (cmd == "LEFT" || cmd == "L") {
       left();
-      Serial.println("KIRI");
     }
-    else if (cmd == "RIGHT") {
+    else if (cmd == "RIGHT" || cmd == "R") {
       right();
-      Serial.println("KANAN");
     }
-    else if (cmd == "STOP") {
+    else if (cmd == "STOP" || cmd == "S") {
       stopMotor();
-      Serial.println("STOP");
+      Serial.println("→ STOP");
     }
-    else {
-      // ===== AUDIO STREAM =====
+    else if (cmd.length() > 0 && cmd != "") {
+      // ===== AUDIO STREAM (binary data) =====
+      // Balikin data ke buffer untuk audio
       int len = Serial.readBytes(buffer, sizeof(buffer));
       if (len > 0) {
         size_t written;
@@ -148,4 +155,7 @@ void loop() {
       }
     }
   }
+  
+  // Tidak ada delay berlebihan - loop berjalan cepat
+  delay(1);  // Small delay untuk stabil, tidak mengganggu response
 }
